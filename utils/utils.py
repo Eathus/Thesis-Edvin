@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from openai import OpenAI
 import os
+import tiktoken
 
 #OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 load_dotenv()
@@ -48,3 +49,37 @@ def load_prompts(directory_path):
 
 def create_message(content, role='user'):
   return {"role": role, "content": content}
+
+def count_tokens(text: str, model: str = "gpt-4", echo=False) -> int:
+    """Count tokens for OpenAI models using tiktoken"""
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        if echo:
+            print("Finished encoding using model:", model)
+    except KeyError:
+        print("invalid input model:", model + ".", "Defaulting to cl100k_base")
+        encoding = tiktoken.get_encoding("cl100k_base")  # Fallback for most models
+    return len(encoding.encode(text))
+
+def count_chat_tokens(messages, model="gpt-4", echo=False):
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        if echo:
+            print("Finished encoding using model:", model)
+
+    except KeyError:
+        print("invalid input model:", model + ".", "Defaulting to cl100k_base")
+        encoding = tiktoken.get_encoding("cl100k_base")
+
+    tokens_per_message = 3
+    tokens_per_name = 1
+
+    total_tokens = 0
+    for msg in messages:
+        total_tokens += tokens_per_message
+        for key, value in msg.items():
+            total_tokens += len(encoding.encode(value))
+            if key == "name":
+                total_tokens += tokens_per_name
+    total_tokens += 3  # priming
+    return total_tokens
