@@ -19,7 +19,7 @@ import hashlib
 from enum import Enum
 
 import os
-import os
+import faiss
 
 from langchain.vectorstores import FAISS, Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
@@ -347,18 +347,18 @@ def add_sequential_ids(documents):
 def create_vectorstore(
     docs,
     save_path="tmp/faiss_index",
-    collection_name=None,
-    vec_store=Vectorstore.FAISS,
+    vec_store="FAISS",
+    embedding_model="BAAI/bge-large-en-v1.5",
     device="cuda",
 ):
+    # Embedding is now an argument!
     embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-large-en-v1.5",
+        model_name=embedding_model,
         model_kwargs={"device": device},
         encode_kwargs={"normalize_embeddings": True},
     )
 
-    if vec_store == Vectorstore.FAISS:
-        # Check if vector store exists and load it
+    if vec_store == "FAISS":
         if os.path.exists(f"{save_path}/index.faiss") and os.path.exists(
             f"{save_path}/index.pkl"
         ):
@@ -366,11 +366,10 @@ def create_vectorstore(
             vectorstore = FAISS.load_local(
                 folder_path=save_path,
                 embeddings=embeddings,
-                allow_dangerous_deserialization=True,  # Required security flag
+                allow_dangerous_deserialization=True,
             )
         else:
-            print("Creating new vector store...")
-            # Assuming 'all_docs' is your list of documents
+            print(f"Creating new vector store with {embedding_model} ...")
             vectorstore = FAISS.from_documents(docs, embeddings)
             vectorstore.save_local(save_path)
             print(f"Vector store saved to {save_path}")
